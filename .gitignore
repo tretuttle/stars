@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.smoke-store.json
+.env
+.env.*
+*.log
+.DS_Store

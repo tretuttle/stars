@@ -1,0 +1,61 @@
+{
+  "name": "@t-rents/stars",
+  "version": "1.0.0",
+  "description": "Local store for GitHub stars + topic-discovered repos. Annotations, events, schema migrations, rate-limit aware. Storage-agnostic, browser-extension-ready, zero runtime deps.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.smoke.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "smoke": "bun scripts/smoke.ts",
+    "prepublishOnly": "bun run clean && bun run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tretuttle/stars.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tretuttle/stars/issues"
+  },
+  "homepage": "https://github.com/tretuttle/stars#readme",
+  "author": "Trent Tuttle",
+  "license": "MIT",
+  "keywords": [
+    "github",
+    "stars",
+    "topics",
+    "discovery",
+    "browser-extension",
+    "chrome-extension",
+    "typescript",
+    "zero-deps"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
