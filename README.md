@@ -1,12 +1,14 @@
 # @t-rents/stars
 
-Local store for your GitHub stars + repos discovered via topic search. Browser-extension-ready, framework-agnostic, zero runtime deps.
+A local search and discovery layer over your GitHub starred repos. Sync from `/user/starred`, expand the set via topic search, annotate with tags/notes/hidden flags that survive every sync.
 
-- `source: "github"` — actually starred on GitHub (refreshed via `sync()`)
-- `source: "topic"` — surfaced via topic search, not starred (won't be removed by sync)
-- Annotations (`tags`, `note`, `hidden`) survive every sync
-- Events fire on every mutation; writes are serialized
-- Schema versioned + auto-migrates from v0 (legacy bare-array JSON) and v1
+- `source: "github"` — actually starred on GitHub (refreshed via `sync()`, prunes on unstar)
+- `source: "topic"` — surfaced via topic search, not starred (kept across syncs)
+- `tags`, `note`, `hidden` — local annotations preserved on sync
+- Typed events on every mutation; writes serialized through an internal queue
+- Schema versioned with auto-migration from v0 and v1
+- Pluggable storage (chrome.storage, memory, fs, or your own adapter)
+- Zero runtime dependencies; ESM only; types included
 
 ## Install
 

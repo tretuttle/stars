@@ -1,7 +1,7 @@
 {
   "name": "@t-rents/stars",
   "version": "1.0.1",
-  "description": "Local store for GitHub stars + topic-discovered repos. Annotations, events, schema migrations, rate-limit aware. Storage-agnostic, browser-extension-ready, zero runtime deps.",
+  "description": "Search and discover over your GitHub starred repos. Sync /user/starred, expand via topic search, annotate locally with tags/notes/hidden. Pluggable storage, zero runtime deps, fully typed.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -41,13 +41,15 @@
   "license": "MIT",
   "keywords": [
     "github",
+    "github-api",
     "stars",
+    "starred-repos",
     "topics",
+    "search",
     "discovery",
-    "browser-extension",
-    "chrome-extension",
     "typescript",
-    "zero-deps"
+    "zero-deps",
+    "esm"
   ],
   "publishConfig": {
     "access": "public",
