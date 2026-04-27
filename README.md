@@ -1,8 +1,14 @@
 # @t-rents/stars
 
+[![npm version](https://img.shields.io/npm/v/@t-rents/stars.svg)](https://www.npmjs.com/package/@t-rents/stars)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@t-rents/stars)](https://bundlephobia.com/package/@t-rents/stars)
+[![types](https://img.shields.io/npm/types/@t-rents/stars.svg)](https://www.npmjs.com/package/@t-rents/stars)
+[![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](./package.json)
+[![license](https://img.shields.io/npm/l/@t-rents/stars.svg)](./LICENSE)
+
 A local search and discovery layer over your GitHub starred repos.
 
-If you've starred more than a few hundred repos, GitHub's own stars page collapses — slow, no tags, no notes, no way to find that vector-db thing you starred two years ago, and no way to expand the set without manually clicking through topic pages. This is the storage and search engine for fixing that: sync your stars, expand the set with topic searches, annotate with tags / notes / a hidden flag — and every annotation survives every resync. Originally built as the engine inside a Chrome extension; usable standalone in any TypeScript runtime.
+If you've starred more than a few hundred repos, GitHub's own stars page collapses — slow, no tags, no notes, no way to find that vector-db thing you starred two years ago, and no way to expand the set without manually clicking through topic pages. This is the storage and search engine for fixing that: sync your stars, expand the set with topic searches, annotate with tags / notes / a hidden flag — and every annotation survives every resync. Works in any TypeScript runtime, including Chrome MV3 extensions.
 
 ## Quick start
 
@@ -12,19 +18,13 @@ import { StarsStore, GitHubClient, FileAdapter } from "@t-rents/stars";
 const gh = new GitHubClient(process.env.GH_TOKEN!);
 const store = new StarsStore(new FileAdapter("./stars.json"), gh);
 
-store.on("synced", ({ result }) => {
-  console.log(`+${result.added} new, -${result.removed} unstarred`);
-});
+await store.sync();                                              // pull /user/starred
+await store.discover(["vector-database", "rag"], { limit: 50 }); // expand via topic search
 
-await store.sync();                                   // pull /user/starred
-await store.discover(["rust", "tui"], { limit: 50 }); // expand via topic search
-await store.addTag("BurntSushi/ripgrep", "favorite");
-await store.setNote("BurntSushi/ripgrep", "fastest grep i've used");
+await store.addTag("pgvector/pgvector", "favorite");
+await store.setNote("pgvector/pgvector", "the one i actually use in prod");
 
-const result = await store.search("vector db", { perPage: 25 });
-for (const repo of result.items) {
-  console.log(`${repo.stars}★  ${repo.full_name} — ${repo.description}`);
-}
+const { items } = await store.search("vector db", { tags: ["favorite"] });
 ```
 
 ## Install
@@ -39,14 +39,14 @@ bun add @t-rents/stars
 
 - **GitHub's own stars page** — fine for a few dozen stars; collapses at scale. No tags, no notes, no topic-based set expansion, no fuzzy search across description + topics + language.
 - **`gh api /user/starred`** — gives you the JSON. Doesn't give you a query layer, annotations, sync diff, ETag-conditional refresh, or a way to merge topic-discovered repos into the same searchable space.
-- **Read-only star managers** — most mirror your existing stars and stop there. This one treats topic-discovery as a first-class source so you can find repos you *haven't* starred yet, alongside the ones you have.
+- **[astralapp](https://github.com/astralapp/astral) and similar star managers** — mirror your existing stars and stop there. This treats topic-discovery as a first-class source, so repos you *haven't* starred yet sit alongside the ones you have, in one searchable space.
 
 ## Storage adapters
 
 ```ts
+new FileAdapter("/path.json")    // node, CLI, seeding from existing JSON
 new ChromeStorageAdapter()       // chrome.storage.local — extensions (10MB quota MV3)
 new MemoryAdapter()              // tests, transient state
-new FileAdapter("/path.json")    // node, CLI, seeding
 ```
 
 `StorageAdapter` is a 3-method interface (`load`, `save`, `clear`) — implement to plug in IndexedDB, localStorage, OPFS, or anything else.
