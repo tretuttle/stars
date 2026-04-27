@@ -6,7 +6,6 @@ A local search and discovery layer over your GitHub starred repos. Sync from `/u
 - `source: "topic"` — surfaced via topic search, not starred (kept across syncs)
 - `tags`, `note`, `hidden` — local annotations preserved on sync
 - Typed events on every mutation; writes serialized through an internal queue
-- Schema versioned with auto-migration from v0 and v1
 - Pluggable storage (chrome.storage, memory, fs, or your own adapter)
 - Zero runtime dependencies; ESM only; types included
 
@@ -92,7 +91,7 @@ store.setNote(fullName, note | null)
 store.hide(fullName) / store.unhide(fullName)
 store.remove(fullName)                          // hard delete
 
-store.importRecords(records, { overwrite? })    // seed from legacy data
+store.importRecords(records, { overwrite? })    // seed from an existing record array
 store.clear()                                   // wipe storage
 ```
 
@@ -154,12 +153,9 @@ MigrationError    // bad schema version or migrator failure
 }
 ```
 
-## Schema migrations
+## Schema versioning
 
-Auto-migrates on every load:
+The persisted store has a `version` field. New installs start at the current schema. A migration registry runs on load, so future schema changes can roll forward without breaking existing stores.
 
-- v0 (bare array, e.g. legacy `stars.json`) → v1 → v2
-- v1 (no annotations) → v2 (adds `tags`, `note`, `hidden`, `etag` per record + sync state)
-
-`MigrationError` thrown if the store is from a newer version than the library.
+Throws `MigrationError` if it encounters a store from a newer schema than the library knows.
 
