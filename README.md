@@ -1,13 +1,31 @@
 # @t-rents/stars
 
-A local search and discovery layer over your GitHub starred repos. Sync from `/user/starred`, expand the set via topic search, annotate with tags/notes/hidden flags that survive every sync.
+A local search and discovery layer over your GitHub starred repos.
 
-- `source: "github"` — actually starred on GitHub (refreshed via `sync()`, prunes on unstar)
-- `source: "topic"` — surfaced via topic search, not starred (kept across syncs)
-- `tags`, `note`, `hidden` — local annotations preserved on sync
-- Typed events on every mutation; writes serialized through an internal queue
-- Pluggable storage (chrome.storage, memory, fs, or your own adapter)
-- Zero runtime dependencies; ESM only; types included
+If you've starred more than a few hundred repos, GitHub's own stars page collapses — slow, no tags, no notes, no way to find that vector-db thing you starred two years ago, and no way to expand the set without manually clicking through topic pages. This is the storage and search engine for fixing that: sync your stars, expand the set with topic searches, annotate with tags / notes / a hidden flag — and every annotation survives every resync. Originally built as the engine inside a Chrome extension; usable standalone in any TypeScript runtime.
+
+## Quick start
+
+```ts
+import { StarsStore, GitHubClient, FileAdapter } from "@t-rents/stars";
+
+const gh = new GitHubClient(process.env.GH_TOKEN!);
+const store = new StarsStore(new FileAdapter("./stars.json"), gh);
+
+store.on("synced", ({ result }) => {
+  console.log(`+${result.added} new, -${result.removed} unstarred`);
+});
+
+await store.sync();                                   // pull /user/starred
+await store.discover(["rust", "tui"], { limit: 50 }); // expand via topic search
+await store.addTag("BurntSushi/ripgrep", "favorite");
+await store.setNote("BurntSushi/ripgrep", "fastest grep i've used");
+
+const result = await store.search("vector db", { perPage: 25 });
+for (const repo of result.items) {
+  console.log(`${repo.stars}★  ${repo.full_name} — ${repo.description}`);
+}
+```
 
 ## Install
 
@@ -17,60 +35,30 @@ npm install @t-rents/stars
 bun add @t-rents/stars
 ```
 
-## Develop
+## Why not just...
 
-```sh
-bun install
-bun run typecheck
-bun run smoke    # offline test against a sample stars.json
-bun run build
-```
-
-## Quick start
-
-```ts
-import {
-  StarsStore,
-  GitHubClient,
-  ChromeStorageAdapter,
-  RateLimitError,
-} from "@t-rents/stars";
-
-const gh = new GitHubClient(token);                  // PAT or OAuth token
-const store = new StarsStore(new ChromeStorageAdapter(), gh);
-
-store.on("synced", ({ result, changes }) => {
-  console.log(`+${result.added} -${result.removed}`, changes.added.map(r => r.full_name));
-});
-
-try {
-  await store.sync();
-} catch (e) {
-  if (e instanceof RateLimitError) console.log("resets at", e.resetAt);
-}
-
-await store.discover(["rust", "tui"], { limit: 50 });
-const result = await store.search("vector db", { perPage: 25, page: 1 });
-```
+- **GitHub's own stars page** — fine for a few dozen stars; collapses at scale. No tags, no notes, no topic-based set expansion, no fuzzy search across description + topics + language.
+- **`gh api /user/starred`** — gives you the JSON. Doesn't give you a query layer, annotations, sync diff, ETag-conditional refresh, or a way to merge topic-discovered repos into the same searchable space.
+- **Read-only star managers** — most mirror your existing stars and stop there. This one treats topic-discovery as a first-class source so you can find repos you *haven't* starred yet, alongside the ones you have.
 
 ## Storage adapters
 
 ```ts
 new ChromeStorageAdapter()       // chrome.storage.local — extensions (10MB quota MV3)
 new MemoryAdapter()              // tests, transient state
-new FileAdapter("/path.json")    // node, CLI, seeding from existing stars.json
+new FileAdapter("/path.json")    // node, CLI, seeding
 ```
 
-`StorageAdapter` is a 3-method interface (`load`, `save`, `clear`) — implement to plug in IndexedDB, localStorage, OPFS, etc.
+`StorageAdapter` is a 3-method interface (`load`, `save`, `clear`) — implement to plug in IndexedDB, localStorage, OPFS, or anything else.
 
 ## API
 
 ### Reads
 ```ts
-store.data()                                    // StoreData (v2)
+store.data()                                    // StoreData
 store.get(fullName)                             // RepoRecord | null
 store.search(query, opts?)                      // SearchResult<RepoRecord>
-store.searchProjected(query, opts?)             // SearchResult<RepoProjection> (slim)
+store.searchProjected(query, opts?)             // SearchResult<RepoProjection> (slim shape)
 store.searchAll(query, opts?)                   // AsyncGenerator<SearchResult>
 store.topics(minCount?)                         // TopicFacet[]
 store.languages()                               // LanguageFacet[]
@@ -125,10 +113,10 @@ store.on("error",      ({ error, op }) => {})
 
 ## Sync semantics
 
-- Sends `If-None-Match` (page-1 ETag) on subsequent syncs; returns `not_modified: true` on 304 with no work done.
-- A repo found on GitHub overwrites the local record (preserving `tags`, `note`, `hidden`, `local_added_at`).
+- A repo found on `/user/starred` overwrites the local record but preserves `tags`, `note`, `hidden`, and `local_added_at`.
 - A topic-discovered repo that turns out to be starred is upgraded (`source: "topic" → "github"`) with `discovered_via` retained as audit trail.
-- Repos that disappear from `/user/starred` (you unstarred them) are pruned by default. Disable via `new StarsStore(adapter, gh, { pruneUnstarred: false })`. Topic-discovered repos are never pruned.
+- Repos that disappear from `/user/starred` (you unstarred them) are pruned by default. Disable with `new StarsStore(adapter, gh, { pruneUnstarred: false })`. Topic-discovered repos are never pruned.
+- Sends `If-None-Match` (page-1 ETag) on subsequent syncs; returns `not_modified: true` on 304 with no work done.
 
 ## Errors
 
@@ -143,7 +131,13 @@ MigrationError    // bad schema version or migrator failure
 
 `isAbortError(e)` covers both `AbortError` and `DOMException("AbortError")`.
 
+## Schema versioning
+
+The persisted store has a `version` field. New installs start at the current schema. A migration registry runs on load, so future schema changes can roll forward without breaking existing stores. Throws `MigrationError` if it encounters a store from a newer schema than the library knows.
+
 ## Browser extension manifest
+
+If you're using this in a Chrome MV3 extension:
 
 ```json
 {
@@ -153,9 +147,10 @@ MigrationError    // bad schema version or migrator failure
 }
 ```
 
-## Schema versioning
+## Contributing
 
-The persisted store has a `version` field. New installs start at the current schema. A migration registry runs on load, so future schema changes can roll forward without breaking existing stores.
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-Throws `MigrationError` if it encounters a store from a newer schema than the library knows.
+## License
 
+MIT

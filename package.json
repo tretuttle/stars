@@ -1,6 +1,6 @@
 {
   "name": "@t-rents/stars",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Search and discover over your GitHub starred repos. Sync /user/starred, expand via topic search, annotate locally with tags/notes/hidden. Pluggable storage, zero runtime deps, fully typed.",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +14,6 @@
   "files": [
     "dist",
     "src",
-    "!src/**/*.smoke.ts",
     "README.md",
     "LICENSE"
   ],
@@ -42,11 +41,14 @@
   "keywords": [
     "github",
     "github-api",
+    "github-stars",
     "stars",
     "starred-repos",
     "topics",
     "search",
     "discovery",
+    "browser-extension",
+    "chrome-extension",
     "typescript",
     "zero-deps",
     "esm"
