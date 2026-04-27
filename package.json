@@ -1,6 +1,6 @@
 {
   "name": "@t-rents/stars",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Search and discover over your GitHub starred repos. Sync /user/starred, expand via topic search, annotate locally with tags/notes/hidden. Pluggable storage, zero runtime deps, fully typed.",
   "type": "module",
   "main": "./dist/index.js",
