@@ -1,6 +1,6 @@
 {
   "name": "@t-rents/stars",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local store for GitHub stars + topic-discovered repos. Annotations, events, schema migrations, rate-limit aware. Storage-agnostic, browser-extension-ready, zero runtime deps.",
   "type": "module",
   "main": "./dist/index.js",
